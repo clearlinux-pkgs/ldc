@@ -4,7 +4,7 @@
 #
 Name     : ldc
 Version  : 1.14.0
-Release  : 4
+Release  : 5
 URL      : https://github.com/ldc-developers/ldc/releases/download/v1.14.0/ldc-1.14.0-src.tar.gz
 Source0  : https://github.com/ldc-developers/ldc/releases/download/v1.14.0/ldc-1.14.0-src.tar.gz
 Summary  : A D Compiler based on the LLVM Compiler Infrastructure including D runtime and libphobos2
@@ -99,7 +99,7 @@ export http_proxy=http://127.0.0.1:9/
 export https_proxy=http://127.0.0.1:9/
 export no_proxy=localhost,127.0.0.1,0.0.0.0
 export LANG=C
-export SOURCE_DATE_EPOCH=1553462570
+export SOURCE_DATE_EPOCH=1553463045
 mkdir -p clr-build
 pushd clr-build
 export CC=clang
@@ -109,12 +109,12 @@ export CFLAGS="-O2 -g -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector --p
 export CXXFLAGS=$CFLAGS
 unset LDFLAGS
 unset LDFLAGS
-%cmake .. -DLDC_ENABLE_PLUGINS=OFF -DLDC_WITH_LLD=OFF -DBUILD_SHARED_LIBS:BOOL=ON -DLDC_DYNAMIC_COMPILE=OFF -DSYSCONF_INSTALL_DIR=/usr/etc
+%cmake .. -DLDC_ENABLE_PLUGINS=ON -DLDC_WITH_LLD=OFF -DBUILD_SHARED_LIBS:BOOL=ON -DLDC_DYNAMIC_COMPILE=OFF -DSYSCONF_INSTALL_DIR=/usr/etc
 make  %{?_smp_mflags}
 popd
 
 %install
-export SOURCE_DATE_EPOCH=1553462570
+export SOURCE_DATE_EPOCH=1553463045
 rm -rf %{buildroot}
 mkdir -p %{buildroot}/usr/share/package-licenses/ldc
 cp LICENSE %{buildroot}/usr/share/package-licenses/ldc/LICENSE

@@ -4,7 +4,7 @@
 #
 Name     : ldc
 Version  : 1.14.0
-Release  : 1
+Release  : 2
 URL      : https://github.com/ldc-developers/ldc/releases/download/v1.14.0/ldc-1.14.0-src.tar.gz
 Source0  : https://github.com/ldc-developers/ldc/releases/download/v1.14.0/ldc-1.14.0-src.tar.gz
 Source1  : https://github.com/ldc-developers/ldc/releases/download/v1.15.0-beta2/ldc2-1.15.0-beta2-linux-x86_64.tar.xz
@@ -12,6 +12,7 @@ Summary  : A D Compiler based on the LLVM Compiler Infrastructure including D ru
 Group    : Development/Tools
 License  : BSD-3-Clause BSL-1.0
 Requires: ldc-bin = %{version}-%{release}
+Requires: ldc-data = %{version}-%{release}
 Requires: ldc-license = %{version}-%{release}
 BuildRequires : buildreq-cmake
 BuildRequires : fake-gold
@@ -37,16 +38,26 @@ rfc1952 (gzip format).
 %package bin
 Summary: bin components for the ldc package.
 Group: Binaries
+Requires: ldc-data = %{version}-%{release}
 Requires: ldc-license = %{version}-%{release}
 
 %description bin
 bin components for the ldc package.
 
 
+%package data
+Summary: data components for the ldc package.
+Group: Data
+
+%description data
+data components for the ldc package.
+
+
 %package dev
 Summary: dev components for the ldc package.
 Group: Development
 Requires: ldc-bin = %{version}-%{release}
+Requires: ldc-data = %{version}-%{release}
 Provides: ldc-devel = %{version}-%{release}
 Requires: ldc = %{version}-%{release}
 
@@ -84,7 +95,7 @@ export http_proxy=http://127.0.0.1:9/
 export https_proxy=http://127.0.0.1:9/
 export no_proxy=localhost,127.0.0.1,0.0.0.0
 export LANG=C
-export SOURCE_DATE_EPOCH=1553459009
+export SOURCE_DATE_EPOCH=1553459886
 mkdir -p clr-build
 pushd clr-build
 export CC=clang
@@ -94,12 +105,12 @@ export CFLAGS="-O2 -g -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector --p
 export CXXFLAGS=$CFLAGS
 unset LDFLAGS
 unset LDFLAGS
-%cmake .. -DLDC_ENABLE_PLUGINS=OFF -DLDC_WITH_LLD=OFF -DBUILD_SHARED_LIBS:BOOL=OFF -DLDC_DYNAMIC_COMPILE=OFF
+%cmake .. -DLDC_ENABLE_PLUGINS=OFF -DLDC_WITH_LLD=OFF -DBUILD_SHARED_LIBS:BOOL=OFF -DLDC_DYNAMIC_COMPILE=OFF -DSYSCONF_INSTALL_DIR=/usr/share/ldc/
 make  %{?_smp_mflags}
 popd
 
 %install
-export SOURCE_DATE_EPOCH=1553459009
+export SOURCE_DATE_EPOCH=1553459886
 rm -rf %{buildroot}
 mkdir -p %{buildroot}/usr/share/package-licenses/ldc
 cp LICENSE %{buildroot}/usr/share/package-licenses/ldc/LICENSE
@@ -120,6 +131,11 @@ popd
 /usr/bin/ldc-prune-cache
 /usr/bin/ldc2
 /usr/bin/ldmd2
+
+%files data
+%defattr(-,root,root,-)
+/usr/share/ldc/bash_completion.d/ldc2
+/usr/share/ldc/ldc2.conf
 
 %files dev
 %defattr(-,root,root,-)

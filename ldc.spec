@@ -4,10 +4,9 @@
 #
 Name     : ldc
 Version  : 1.14.0
-Release  : 3
+Release  : 4
 URL      : https://github.com/ldc-developers/ldc/releases/download/v1.14.0/ldc-1.14.0-src.tar.gz
 Source0  : https://github.com/ldc-developers/ldc/releases/download/v1.14.0/ldc-1.14.0-src.tar.gz
-Source1  : https://github.com/ldc-developers/ldc/releases/download/v1.15.0-beta2/ldc2-1.15.0-beta2-linux-x86_64.tar.xz
 Summary  : A D Compiler based on the LLVM Compiler Infrastructure including D runtime and libphobos2
 Group    : Development/Tools
 License  : BSD-3-Clause BSL-1.0
@@ -16,7 +15,9 @@ Requires: ldc-config = %{version}-%{release}
 Requires: ldc-lib = %{version}-%{release}
 Requires: ldc-license = %{version}-%{release}
 BuildRequires : buildreq-cmake
-BuildRequires : fake-gold
+BuildRequires : ldc
+BuildRequires : ldc-config
+BuildRequires : ldc-dev
 BuildRequires : libffi-dev
 BuildRequires : llvm
 BuildRequires : llvm-dev
@@ -85,17 +86,10 @@ license components for the ldc package.
 
 %prep
 %setup -q -n ldc-1.14.0-src
-cd ..
-%setup -q -T -D -n ldc-1.14.0-src -b 1
-mkdir -p bootstrap
-cp -r %{_topdir}/BUILD/ldc2-1.15.0-beta2-linux-x86_64/* %{_topdir}/BUILD/ldc-1.14.0-src/bootstrap
 %patch1 -p1
 
 %build
 ## build_prepend content
-export D_COMPILER=/builddir/build/BUILD/ldc-1.14.0-src/bootstrap/bin/ldc2
-export DMD=/builddir/build/BUILD/ldc-1.14.0-src/bootstrap/bin/ldmd2
-export PATH="/usr/local/bin:/usr/lib64/gcc/x86_64-generic-linux:$PATH:/builddir/build/BUILD/ldc-1.14.0-src/bootstrap/bin"
 export CFLAGS="$CFLAGS -fPIC "
 export LDFLAGS="$LDFLAGS -fPIC "
 export CXXFLAGS="$CXXFLAGS -fPIC"
@@ -105,7 +99,7 @@ export http_proxy=http://127.0.0.1:9/
 export https_proxy=http://127.0.0.1:9/
 export no_proxy=localhost,127.0.0.1,0.0.0.0
 export LANG=C
-export SOURCE_DATE_EPOCH=1553461754
+export SOURCE_DATE_EPOCH=1553462570
 mkdir -p clr-build
 pushd clr-build
 export CC=clang
@@ -120,11 +114,10 @@ make  %{?_smp_mflags}
 popd
 
 %install
-export SOURCE_DATE_EPOCH=1553461754
+export SOURCE_DATE_EPOCH=1553462570
 rm -rf %{buildroot}
 mkdir -p %{buildroot}/usr/share/package-licenses/ldc
 cp LICENSE %{buildroot}/usr/share/package-licenses/ldc/LICENSE
-cp bootstrap/LICENSE %{buildroot}/usr/share/package-licenses/ldc/bootstrap_LICENSE
 cp runtime/druntime/LICENSE.txt %{buildroot}/usr/share/package-licenses/ldc/runtime_druntime_LICENSE.txt
 cp runtime/phobos/LICENSE_1_0.txt %{buildroot}/usr/share/package-licenses/ldc/runtime_phobos_LICENSE_1_0.txt
 pushd clr-build
@@ -716,6 +709,5 @@ popd
 %files license
 %defattr(0644,root,root,0755)
 /usr/share/package-licenses/ldc/LICENSE
-/usr/share/package-licenses/ldc/bootstrap_LICENSE
 /usr/share/package-licenses/ldc/runtime_druntime_LICENSE.txt
 /usr/share/package-licenses/ldc/runtime_phobos_LICENSE_1_0.txt

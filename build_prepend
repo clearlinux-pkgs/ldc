@@ -1,6 +1,6 @@
-export D_COMPILER=/builddir/build/BUILD/ldc-1.14.0-src/bootstrap/bin/ldc2
-export DMD=/builddir/build/BUILD/ldc-1.14.0-src/bootstrap/bin/ldmd2
-export PATH="/usr/local/bin:/usr/lib64/gcc/x86_64-generic-linux:$PATH:/builddir/build/BUILD/ldc-1.14.0-src/bootstrap/bin"
+#export D_COMPILER=/builddir/build/BUILD/ldc-1.14.0-src/bootstrap/bin/ldc2
+#export DMD=/builddir/build/BUILD/ldc-1.14.0-src/bootstrap/bin/ldmd2
+#export PATH="/usr/local/bin:/usr/lib64/gcc/x86_64-generic-linux:$PATH:/builddir/build/BUILD/ldc-1.14.0-src/bootstrap/bin"
 export CFLAGS="$CFLAGS -fPIC "
 export LDFLAGS="$LDFLAGS -fPIC "
 export CXXFLAGS="$CXXFLAGS -fPIC"

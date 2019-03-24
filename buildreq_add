@@ -1,0 +1,10 @@
+# This file contains additional build requirements that did not get
+# picked up automatically. One name per line, no whitespace.
+llvm-dev
+strace
+#binutils-extras
+llvm-extras
+llvm-staticdev
+libffi-dev
+ncurses-dev
+fake-gold

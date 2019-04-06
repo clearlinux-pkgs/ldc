@@ -4,7 +4,7 @@
 #
 Name     : ldc
 Version  : 1.15.0
-Release  : 6
+Release  : 7
 URL      : https://github.com/ldc-developers/ldc/releases/download/v1.15.0/ldc-1.15.0-src.tar.gz
 Source0  : https://github.com/ldc-developers/ldc/releases/download/v1.15.0/ldc-1.15.0-src.tar.gz
 Summary  : A D Compiler based on the LLVM Compiler Infrastructure including D runtime and libphobos2

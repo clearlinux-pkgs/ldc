@@ -4,10 +4,10 @@
 #
 Name     : ldc
 Version  : 1.15.0
-Release  : 8
+Release  : 9
 URL      : https://github.com/ldc-developers/ldc/releases/download/v1.15.0/ldc-1.15.0-src.tar.gz
 Source0  : https://github.com/ldc-developers/ldc/releases/download/v1.15.0/ldc-1.15.0-src.tar.gz
-Summary  : A D Compiler based on the LLVM Compiler Infrastructure including D runtime and libphobos2
+Summary  : No detailed summary available
 Group    : Development/Tools
 License  : BSD-3-Clause BSL-1.0
 Requires: ldc-bin = %{version}-%{release}
@@ -25,17 +25,12 @@ BuildRequires : llvm-extras
 BuildRequires : llvm-staticdev
 BuildRequires : ncurses-dev
 BuildRequires : pkg-config
-BuildRequires : pkgconfig(LLVMSPIRVLib)
 BuildRequires : strace
 Patch1: nogold.patch
 
 %description
-ZLIB DATA COMPRESSION LIBRARY
-zlib 1.2.11 is a general purpose data compression library.  All the code is
-thread safe.  The data format used by the zlib library is described by RFCs
-(Request for Comments) 1950 to 1952 in the files
-http://tools.ietf.org/html/rfc1950 (zlib format), rfc1951 (deflate format) and
-rfc1952 (gzip format).
+This is a standalone (DMD-style) binary package for LDC, the LLVM-based D
+compiler.
 
 %package bin
 Summary: bin components for the ldc package.
@@ -98,10 +93,11 @@ export LD=/usr/bin/ld
 export http_proxy=http://127.0.0.1:9/
 export https_proxy=http://127.0.0.1:9/
 export no_proxy=localhost,127.0.0.1,0.0.0.0
-export LANG=C
-export SOURCE_DATE_EPOCH=1554578892
+export LANG=C.UTF-8
+export SOURCE_DATE_EPOCH=1563309490
 mkdir -p clr-build
 pushd clr-build
+export GCC_IGNORE_WERROR=1
 export CC=clang
 export CXX=clang++
 export LD=ld.gold
@@ -109,12 +105,16 @@ export CFLAGS="-O2 -g -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector --p
 export CXXFLAGS=$CFLAGS
 unset LDFLAGS
 unset LDFLAGS
+export CFLAGS="$CFLAGS -fno-lto "
+export FCFLAGS="$CFLAGS -fno-lto "
+export FFLAGS="$CFLAGS -fno-lto "
+export CXXFLAGS="$CXXFLAGS -fno-lto "
 %cmake .. -DLDC_ENABLE_PLUGINS=ON -DLDC_WITH_LLD=OFF -DBUILD_SHARED_LIBS:BOOL=ON -DLDC_DYNAMIC_COMPILE=OFF -DSYSCONF_INSTALL_DIR=/usr/etc
-make  %{?_smp_mflags}
+make  %{?_smp_mflags} VERBOSE=1
 popd
 
 %install
-export SOURCE_DATE_EPOCH=1554578892
+export SOURCE_DATE_EPOCH=1563309490
 rm -rf %{buildroot}
 mkdir -p %{buildroot}/usr/share/package-licenses/ldc
 cp LICENSE %{buildroot}/usr/share/package-licenses/ldc/LICENSE

@@ -4,14 +4,14 @@
 #
 Name     : ldc
 Version  : 1.15.0
-Release  : 9
+Release  : 10
 URL      : https://github.com/ldc-developers/ldc/releases/download/v1.15.0/ldc-1.15.0-src.tar.gz
 Source0  : https://github.com/ldc-developers/ldc/releases/download/v1.15.0/ldc-1.15.0-src.tar.gz
 Summary  : No detailed summary available
 Group    : Development/Tools
 License  : BSD-3-Clause BSL-1.0
 Requires: ldc-bin = %{version}-%{release}
-Requires: ldc-config = %{version}-%{release}
+Requires: ldc-data = %{version}-%{release}
 Requires: ldc-lib = %{version}-%{release}
 Requires: ldc-license = %{version}-%{release}
 BuildRequires : buildreq-cmake
@@ -35,19 +35,19 @@ compiler.
 %package bin
 Summary: bin components for the ldc package.
 Group: Binaries
-Requires: ldc-config = %{version}-%{release}
+Requires: ldc-data = %{version}-%{release}
 Requires: ldc-license = %{version}-%{release}
 
 %description bin
 bin components for the ldc package.
 
 
-%package config
-Summary: config components for the ldc package.
-Group: Default
+%package data
+Summary: data components for the ldc package.
+Group: Data
 
-%description config
-config components for the ldc package.
+%description data
+data components for the ldc package.
 
 
 %package dev
@@ -55,6 +55,7 @@ Summary: dev components for the ldc package.
 Group: Development
 Requires: ldc-lib = %{version}-%{release}
 Requires: ldc-bin = %{version}-%{release}
+Requires: ldc-data = %{version}-%{release}
 Provides: ldc-devel = %{version}-%{release}
 Requires: ldc = %{version}-%{release}
 
@@ -65,6 +66,7 @@ dev components for the ldc package.
 %package lib
 Summary: lib components for the ldc package.
 Group: Libraries
+Requires: ldc-data = %{version}-%{release}
 Requires: ldc-license = %{version}-%{release}
 
 %description lib
@@ -94,7 +96,7 @@ export http_proxy=http://127.0.0.1:9/
 export https_proxy=http://127.0.0.1:9/
 export no_proxy=localhost,127.0.0.1,0.0.0.0
 export LANG=C.UTF-8
-export SOURCE_DATE_EPOCH=1563309490
+export SOURCE_DATE_EPOCH=1565632286
 mkdir -p clr-build
 pushd clr-build
 export GCC_IGNORE_WERROR=1
@@ -114,7 +116,7 @@ make  %{?_smp_mflags} VERBOSE=1
 popd
 
 %install
-export SOURCE_DATE_EPOCH=1563309490
+export SOURCE_DATE_EPOCH=1565632286
 rm -rf %{buildroot}
 mkdir -p %{buildroot}/usr/share/package-licenses/ldc
 cp LICENSE %{buildroot}/usr/share/package-licenses/ldc/LICENSE
@@ -123,6 +125,12 @@ cp runtime/phobos/LICENSE_1_0.txt %{buildroot}/usr/share/package-licenses/ldc/ru
 pushd clr-build
 %make_install
 popd
+## install_append content
+mkdir -p %{buildroot}/usr/share/defaults/etc
+mkdir -p %{buildroot}/usr/share/bash-completion/completions
+mv %{buildroot}/usr/etc/bash_completion.d/ldc2 %{buildroot}/usr/share/bash-completion/completions/
+mv %{buildroot}/usr/etc/ldc2.conf %{buildroot}/usr/share/defaults/etc/
+## install_append end
 
 %files
 %defattr(-,root,root,-)
@@ -135,10 +143,10 @@ popd
 /usr/bin/ldc2
 /usr/bin/ldmd2
 
-%files config
+%files data
 %defattr(-,root,root,-)
-%config /usr/etc/bash_completion.d/ldc2
-%config /usr/etc/ldc2.conf
+/usr/share/bash-completion/completions/ldc2
+/usr/share/defaults/etc/ldc2.conf
 
 %files dev
 %defattr(-,root,root,-)

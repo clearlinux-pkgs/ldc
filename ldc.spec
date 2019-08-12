@@ -4,7 +4,7 @@
 #
 Name     : ldc
 Version  : 1.15.0
-Release  : 10
+Release  : 11
 URL      : https://github.com/ldc-developers/ldc/releases/download/v1.15.0/ldc-1.15.0-src.tar.gz
 Source0  : https://github.com/ldc-developers/ldc/releases/download/v1.15.0/ldc-1.15.0-src.tar.gz
 Summary  : No detailed summary available
@@ -16,7 +16,6 @@ Requires: ldc-lib = %{version}-%{release}
 Requires: ldc-license = %{version}-%{release}
 BuildRequires : buildreq-cmake
 BuildRequires : ldc
-BuildRequires : ldc-config
 BuildRequires : ldc-dev
 BuildRequires : libffi-dev
 BuildRequires : llvm
@@ -27,6 +26,7 @@ BuildRequires : ncurses-dev
 BuildRequires : pkg-config
 BuildRequires : strace
 Patch1: nogold.patch
+Patch2: stateless.patch
 
 %description
 This is a standalone (DMD-style) binary package for LDC, the LLVM-based D
@@ -84,6 +84,7 @@ license components for the ldc package.
 %prep
 %setup -q -n ldc-1.15.0-src
 %patch1 -p1
+%patch2 -p1
 
 %build
 ## build_prepend content
@@ -96,7 +97,7 @@ export http_proxy=http://127.0.0.1:9/
 export https_proxy=http://127.0.0.1:9/
 export no_proxy=localhost,127.0.0.1,0.0.0.0
 export LANG=C.UTF-8
-export SOURCE_DATE_EPOCH=1565632286
+export SOURCE_DATE_EPOCH=1565639061
 mkdir -p clr-build
 pushd clr-build
 export GCC_IGNORE_WERROR=1
@@ -111,12 +112,16 @@ export CFLAGS="$CFLAGS -fno-lto "
 export FCFLAGS="$CFLAGS -fno-lto "
 export FFLAGS="$CFLAGS -fno-lto "
 export CXXFLAGS="$CXXFLAGS -fno-lto "
-%cmake .. -DLDC_ENABLE_PLUGINS=ON -DLDC_WITH_LLD=OFF -DBUILD_SHARED_LIBS:BOOL=ON -DLDC_DYNAMIC_COMPILE=OFF -DSYSCONF_INSTALL_DIR=/usr/etc
+%cmake .. -DLDC_ENABLE_PLUGINS=ON \
+-DLDC_WITH_LLD=OFF \
+-DBUILD_SHARED_LIBS:BOOL=ON \
+-DLDC_DYNAMIC_COMPILE=OFF \
+-DSYSCONF_INSTALL_DIR=/usr/share/defaults/etc
 make  %{?_smp_mflags} VERBOSE=1
 popd
 
 %install
-export SOURCE_DATE_EPOCH=1565632286
+export SOURCE_DATE_EPOCH=1565639061
 rm -rf %{buildroot}
 mkdir -p %{buildroot}/usr/share/package-licenses/ldc
 cp LICENSE %{buildroot}/usr/share/package-licenses/ldc/LICENSE
@@ -126,10 +131,8 @@ pushd clr-build
 %make_install
 popd
 ## install_append content
-mkdir -p %{buildroot}/usr/share/defaults/etc
 mkdir -p %{buildroot}/usr/share/bash-completion/completions
-mv %{buildroot}/usr/etc/bash_completion.d/ldc2 %{buildroot}/usr/share/bash-completion/completions/
-mv %{buildroot}/usr/etc/ldc2.conf %{buildroot}/usr/share/defaults/etc/
+mv %{buildroot}/usr/share/defaults/etc/bash_completion.d/ldc2 %{buildroot}/usr/share/bash-completion/completions/
 ## install_append end
 
 %files

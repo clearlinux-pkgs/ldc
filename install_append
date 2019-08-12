@@ -1,4 +1,2 @@
-mkdir -p %{buildroot}/usr/share/defaults/etc
 mkdir -p %{buildroot}/usr/share/bash-completion/completions
-mv %{buildroot}/usr/etc/bash_completion.d/ldc2 %{buildroot}/usr/share/bash-completion/completions/
-mv %{buildroot}/usr/etc/ldc2.conf %{buildroot}/usr/share/defaults/etc/
+mv %{buildroot}/usr/share/defaults/etc/bash_completion.d/ldc2 %{buildroot}/usr/share/bash-completion/completions/

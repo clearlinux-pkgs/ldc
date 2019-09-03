@@ -28,6 +28,9 @@ BuildRequires : strace
 Patch1: nogold.patch
 Patch2: stateless.patch
 
+Provides: libdruntime-ldc-shared.so.85()(64bit)
+Provides: libphobos2-ldc-shared.so.85()(64bit)
+
 %description
 This is a standalone (DMD-style) binary package for LDC, the LLVM-based D
 compiler.

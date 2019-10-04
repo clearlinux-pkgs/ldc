@@ -4,7 +4,7 @@
 #
 Name     : ldc
 Version  : 1.17.0
-Release  : 16
+Release  : 17
 URL      : https://github.com/ldc-developers/ldc/releases/download/v1.17.0/ldc-1.17.0-src.tar.gz
 Source0  : https://github.com/ldc-developers/ldc/releases/download/v1.17.0/ldc-1.17.0-src.tar.gz
 Summary  : No detailed summary available
@@ -25,8 +25,9 @@ BuildRequires : llvm-staticdev
 BuildRequires : ncurses-dev
 BuildRequires : pkg-config
 BuildRequires : strace
-Patch1: nogold.patch
-Patch2: stateless.patch
+Patch1: 0001-Fixups-for-packaging-and-stateless-config.patch
+Patch2: 0002-Don-t-force-the-use-of-gold-linker.patch
+Patch3: 0003-Add-support-for-LLVM-9.0.0.patch
 
 %description
 This is a standalone (DMD-style) binary package for LDC, the LLVM-based D
@@ -85,6 +86,7 @@ license components for the ldc package.
 %setup -q -n ldc-1.17.0-src
 %patch1 -p1
 %patch2 -p1
+%patch3 -p1
 
 %build
 ## build_prepend content
@@ -97,7 +99,7 @@ export http_proxy=http://127.0.0.1:9/
 export https_proxy=http://127.0.0.1:9/
 export no_proxy=localhost,127.0.0.1,0.0.0.0
 export LANG=C.UTF-8
-export SOURCE_DATE_EPOCH=1570039014
+export SOURCE_DATE_EPOCH=1570163293
 mkdir -p clr-build
 pushd clr-build
 export GCC_IGNORE_WERROR=1
@@ -121,7 +123,7 @@ make  %{?_smp_mflags}  VERBOSE=1
 popd
 
 %install
-export SOURCE_DATE_EPOCH=1570039014
+export SOURCE_DATE_EPOCH=1570163293
 rm -rf %{buildroot}
 mkdir -p %{buildroot}/usr/share/package-licenses/ldc
 cp LICENSE %{buildroot}/usr/share/package-licenses/ldc/LICENSE
@@ -141,7 +143,6 @@ mv %{buildroot}/usr/share/defaults/etc/bash_completion.d/ldc2 %{buildroot}/usr/s
 %files bin
 %defattr(-,root,root,-)
 /usr/bin/ldc-build-runtime
-/usr/bin/ldc-profdata
 /usr/bin/ldc-prune-cache
 /usr/bin/ldc2
 /usr/bin/ldmd2

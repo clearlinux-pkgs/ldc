@@ -1,0 +1,410 @@
+From 40bcabb6f665ed5cdd65a0bf509b65d3be993ae0 Mon Sep 17 00:00:00 2001
+From: Martin Kinkelin <noone@nowhere.com>
+Date: Sat, 21 Sep 2019 01:15:05 +0200
+Subject: [PATCH] Add support for LLVM 9.0.0
+
+Including some of Nicholas' fixes in #3144.
+---
+ driver/cl_options-llvm.cpp          |  18 ++++-
+ driver/codegenerator.cpp            |  21 +++++-
+ driver/toobj.cpp                    | 100 +++++++++++++---------------
+ gen/modules.cpp                     |  15 ++++-
+ gen/optimizer.cpp                   |  13 ++++
+ gen/passes/GarbageCollect2Stack.cpp |  11 +--
+ gen/runtime.cpp                     |   7 +-
+ 7 files changed, 118 insertions(+), 67 deletions(-)
+
+diff --git a/driver/cl_options-llvm.cpp b/driver/cl_options-llvm.cpp
+index 94b6447c..b24c6b82 100644
+--- a/driver/cl_options-llvm.cpp
++++ b/driver/cl_options-llvm.cpp
+@@ -82,11 +82,19 @@ std::string getFeaturesStr() { return ::getFeaturesStr(); }
+ // the lld namespace. Define them here to prevent the LLD object from being
+ // linked in with its conflicting command-line options.
+ namespace lld {
++#if LDC_LLVM_VER >= 900
++TargetOptions initTargetOptionsFromCodeGenFlags() {
++#else
+ TargetOptions InitTargetOptionsFromCodeGenFlags() {
++#endif
+   return ::InitTargetOptionsFromCodeGenFlags();
+ }
+ 
+-#if LDC_LLVM_VER >= 600
++#if LDC_LLVM_VER >= 900
++Optional<CodeModel::Model> getCodeModelFromCMModel() {
++  return ::getCodeModel();
++}
++#elif LDC_LLVM_VER >= 600
+ Optional<CodeModel::Model> GetCodeModelFromCMModel() {
+   return ::getCodeModel();
+ }
+@@ -94,11 +102,15 @@ Optional<CodeModel::Model> GetCodeModelFromCMModel() {
+ CodeModel::Model GetCodeModelFromCMModel() { return ::CMModel; }
+ #endif
+ 
+-#if LDC_LLVM_VER >= 700
++#if LDC_LLVM_VER >= 900
++std::string getCPUStr() { return ::getCPUStr(); }
++#elif LDC_LLVM_VER >= 700
+ std::string GetCPUStr() { return ::getCPUStr(); }
+ #endif
+ 
+-#if LDC_LLVM_VER >= 800
++#if LDC_LLVM_VER >= 900
++std::vector<std::string> getMAttrs() { return ::MAttrs; }
++#elif LDC_LLVM_VER >= 800
+ std::vector<std::string> GetMAttrs() { return ::MAttrs; }
+ #endif
+ }
+diff --git a/driver/codegenerator.cpp b/driver/codegenerator.cpp
+index f47ace9d..17839a1b 100644
+--- a/driver/codegenerator.cpp
++++ b/driver/codegenerator.cpp
+@@ -22,6 +22,9 @@
+ #include "gen/logger.h"
+ #include "gen/modules.h"
+ #include "gen/runtime.h"
++#if LDC_LLVM_VER >= 900
++#include "llvm/IR/RemarkStreamer.h"
++#endif
+ #include "llvm/Support/FileSystem.h"
+ #include "llvm/Support/Path.h"
+ #include "llvm/Support/ToolOutputFile.h"
+@@ -51,6 +54,20 @@ createAndSetDiagnosticsOutputFile(IRState &irs, llvm::LLVMContext &ctx,
+       llvm::sys::path::replace_extension(diagnosticsFilename, "opt.yaml");
+     }
+ 
++    // If there is instrumentation data available, also output function hotness
++    const bool withHotness = opts::isUsingPGOProfile();
++
++#if LDC_LLVM_VER >= 900
++    auto remarksFileOrError = llvm::setupOptimizationRemarks(
++        ctx, diagnosticsFilename, "", "", withHotness);
++    if (llvm::Error e = remarksFileOrError.takeError()) {
++      irs.dmodule->error("Could not create file %s: %s",
++                         diagnosticsFilename.c_str(),
++                         llvm::toString(std::move(e)).c_str());
++      fatal();
++    }
++    diagnosticsOutputFile = std::move(*remarksFileOrError);
++#else
+     std::error_code EC;
+     diagnosticsOutputFile = llvm::make_unique<llvm::ToolOutputFile>(
+         diagnosticsFilename, EC, llvm::sys::fs::F_None);
+@@ -63,14 +80,14 @@ createAndSetDiagnosticsOutputFile(IRState &irs, llvm::LLVMContext &ctx,
+     ctx.setDiagnosticsOutputFile(
+         llvm::make_unique<llvm::yaml::Output>(diagnosticsOutputFile->os()));
+ 
+-    // If there is instrumentation data available, also output function hotness
+-    if (opts::isUsingPGOProfile()) {
++    if (withHotness) {
+ #if LDC_LLVM_VER >= 500
+       ctx.setDiagnosticsHotnessRequested(true);
+ #else
+       ctx.setDiagnosticHotnessRequested(true);
+ #endif
+     }
++#endif // LDC_LLVM_VER < 900
+   }
+ #endif
+ 
+diff --git a/driver/toobj.cpp b/driver/toobj.cpp
+index c5187f0b..72aa707b 100644
+--- a/driver/toobj.cpp
++++ b/driver/toobj.cpp
+@@ -41,14 +41,11 @@
+ #endif
+ #include "llvm/Transforms/Utils/Cloning.h"
+ #include "llvm/IR/Module.h"
+-#include <cstddef>
+-#include <fstream>
+-
+ #ifdef LDC_LLVM_SUPPORTED_TARGET_SPIRV
+-namespace llvm {
+-    ModulePass *createSPIRVWriterPass(llvm::raw_ostream &Str);
+-}
++#include "LLVMSPIRVLib/LLVMSPIRVLib.h"
+ #endif
++#include <cstddef>
++#include <fstream>
+ 
+ static llvm::cl::opt<bool>
+     NoIntegratedAssembler("no-integrated-as", llvm::cl::ZeroOrMore,
+@@ -59,18 +56,26 @@ namespace {
+ 
+ // based on llc code, University of Illinois Open Source License
+ void codegenModule(llvm::TargetMachine &Target, llvm::Module &m,
+-                   llvm::raw_fd_ostream &out,
++                   const char *filename,
+                    llvm::TargetMachine::CodeGenFileType fileType) {
+   using namespace llvm;
+ 
+-// Create a PassManager to hold and optimize the collection of passes we are
+-// about to build.
+-  legacy::PassManager Passes;
+-  ComputeBackend::Type cb = getComputeTargetType(&m);
++  const ComputeBackend::Type cb = getComputeTargetType(&m);
+ 
+   if (cb == ComputeBackend::SPIRV) {
+ #ifdef LDC_LLVM_SUPPORTED_TARGET_SPIRV
+     IF_LOG Logger::println("running createSPIRVWriterPass()");
++#if LDC_LLVM_VER >= 900
++    std::ofstream out(filename, std::ofstream::binary);
++#else
++    std::error_code errinfo;
++    llvm::raw_fd_ostream out(filename, errinfo, llvm::sys::fs::F_None);
++    if (errinfo) {
++      error(Loc(), "cannot write file '%s': %s", filename,
++            errinfo.message().c_str());
++      fatal();
++    }
++#endif
+     llvm::createSPIRVWriterPass(out)->runOnModule(m);
+     IF_LOG Logger::println("Success.");
+ #else
+@@ -80,11 +85,23 @@ void codegenModule(llvm::TargetMachine &Target, llvm::Module &m,
+     return;
+   }
+ 
++  std::error_code errinfo;
++  llvm::raw_fd_ostream out(filename, errinfo, llvm::sys::fs::F_None);
++  if (errinfo) {
++    error(Loc(), "cannot write file '%s': %s", filename,
++          errinfo.message().c_str());
++    fatal();
++  }
++
+   // The DataLayout is already set at the module (in module.cpp,
+   // method Module::genLLVMModule())
+   // FIXME: Introduce new command line switch default-data-layout to
+   // override the module data layout
+ 
++  // Create a PassManager to hold and optimize the collection of passes we are
++  // about to build.
++  legacy::PassManager Passes;
++
+   // Add internal analysis passes from the target machine.
+   Passes.add(
+       createTargetTransformInfoWrapperPass(Target.getTargetIRAnalysis()));
+@@ -106,19 +123,6 @@ void codegenModule(llvm::TargetMachine &Target, llvm::Module &m,
+   Passes.run(m);
+ }
+ 
+-void cloneAndCodegenModule(llvm::TargetMachine &Target, llvm::Module &m,
+-                           llvm::raw_fd_ostream &out,
+-                           llvm::TargetMachine::CodeGenFileType fileType) {
+-  auto newModule = llvm::CloneModule(
+-#if LDC_LLVM_VER >= 700
+-                     m
+-#else
+-                     &m
+-#endif
+-                     );
+-  codegenModule(Target, *newModule, out, fileType);
+-}
+-
+ }
+ 
+ static void assemble(const std::string &asmpath, const std::string &objpath) {
+@@ -269,19 +273,8 @@ public:
+ 
+ void writeObjectFile(llvm::Module *m, const char *filename) {
+   IF_LOG Logger::println("Writing object file to: %s", filename);
+-  std::error_code errinfo;
+-  {
+-    llvm::raw_fd_ostream out(filename, errinfo, llvm::sys::fs::F_None);
+-    if (!errinfo)
+-    {
+-      codegenModule(*gTargetMachine, *m, out,
+-                    llvm::TargetMachine::CGFT_ObjectFile);
+-    } else {
+-      error(Loc(), "cannot write object file '%s': %s", filename,
+-            errinfo.message().c_str());
+-      fatal();
+-    }
+-  }
++  codegenModule(*gTargetMachine, *m, filename,
++                llvm::TargetMachine::CGFT_ObjectFile);
+ }
+ 
+ bool shouldAssembleExternally() {
+@@ -438,24 +431,21 @@ void writeModule(llvm::Module *m, const char *filename) {
+     }
+ 
+     Logger::println("Writing asm to: %s\n", spath.c_str());
+-    std::error_code errinfo;
+-    {
+-      llvm::raw_fd_ostream out(spath.c_str(), errinfo, llvm::sys::fs::F_None);
+-      if (!errinfo)
+-      {
+-        if (writeObj) {
+-          // Clone module if we have both output-o and output-s flags
+-          // to avoid running 'addPassesToEmitFile' passes twice on same module
+-          cloneAndCodegenModule(*gTargetMachine, *m, out,
+-                                llvm::TargetMachine::CGFT_AssemblyFile);
+-        } else {
+-          codegenModule(*gTargetMachine, *m, out,
+-                        llvm::TargetMachine::CGFT_AssemblyFile);
+-        }
+-      } else {
+-        error(Loc(), "cannot write asm: %s", errinfo.message().c_str());
+-        fatal();
+-      }
++    if (writeObj) {
++      // Clone module if we have both output-o and output-s flags
++      // to avoid running 'addPassesToEmitFile' passes twice on same module
++      auto clonedModule = llvm::CloneModule(
++#if LDC_LLVM_VER >= 700
++          *m
++#else
++          m
++#endif
++      );
++      codegenModule(*gTargetMachine, *clonedModule, spath.c_str(),
++                    llvm::TargetMachine::CGFT_AssemblyFile);
++    } else {
++      codegenModule(*gTargetMachine, *m, spath.c_str(),
++                    llvm::TargetMachine::CGFT_AssemblyFile);
+     }
+ 
+     if (assembleExternally) {
+diff --git a/gen/modules.cpp b/gen/modules.cpp
+index e8ec1623..7b7efac5 100644
+--- a/gen/modules.cpp
++++ b/gen/modules.cpp
+@@ -542,12 +542,23 @@ void loadInstrProfileData(IRState *irs) {
+     }
+     irs->PGOReader = std::move(readerOrErr.get());
+ 
+-    if (!irs->module.getProfileSummary()) {
++    if (!irs->module.getProfileSummary(
++#if LDC_LLVM_VER >= 900
++            /*is context sensitive profile=*/false
++#endif
++            )) {
+       // Don't reset the summary. There is only one profile data file per LDC
+       // invocation so the summary must be the same as the one that is already
+       // set.
+       irs->module.setProfileSummary(
+-          irs->PGOReader->getSummary().getMD(irs->context()));
++#if LDC_LLVM_VER >= 900
++          irs->PGOReader->getSummary(/*is context sensitive profile=*/false)
++              .getMD(irs->context()),
++          llvm::ProfileSummary::PSK_Instr
++#else
++          irs->PGOReader->getSummary().getMD(irs->context())
++#endif
++      );
+     }
+   }
+ }
+diff --git a/gen/optimizer.cpp b/gen/optimizer.cpp
+index 3d330dd4..48e75cf6 100644
+--- a/gen/optimizer.cpp
++++ b/gen/optimizer.cpp
+@@ -29,6 +29,9 @@
+ #include "llvm/Support/CommandLine.h"
+ #include "llvm/Target/TargetMachine.h"
+ #include "llvm/Transforms/Instrumentation.h"
++#if LDC_LLVM_VER >= 900
++#include "llvm/Transforms/Instrumentation/AddressSanitizer.h"
++#endif
+ #if LDC_LLVM_VER >= 800
+ #include "llvm/Transforms/Instrumentation/MemorySanitizer.h"
+ #include "llvm/Transforms/Instrumentation/ThreadSanitizer.h"
+@@ -91,8 +94,10 @@ static cl::opt<cl::boolOrDefault, false, opts::FlagParser<cl::boolOrDefault>>
+         "cross-module-inlining", cl::ZeroOrMore, cl::Hidden,
+         cl::desc("(*) Enable cross-module function inlining (default disabled)"));
+ 
++#if LDC_LLVM_VER < 900
+ static cl::opt<bool> unitAtATime("unit-at-a-time", cl::desc("Enable basic IPO"),
+                                  cl::ZeroOrMore, cl::init(true));
++#endif
+ 
+ static cl::opt<bool> stripDebug(
+     "strip-debug", cl::ZeroOrMore,
+@@ -187,7 +192,11 @@ static void addGarbageCollect2StackPass(const PassManagerBuilder &builder,
+ static void addAddressSanitizerPasses(const PassManagerBuilder &Builder,
+                                       PassManagerBase &PM) {
+   PM.add(createAddressSanitizerFunctionPass());
++#if LDC_LLVM_VER >= 900
++  PM.add(createModuleAddressSanitizerLegacyPassPass());
++#else
+   PM.add(createAddressSanitizerModulePass());
++#endif
+ }
+ 
+ static void addMemorySanitizerPass(const PassManagerBuilder &Builder,
+@@ -290,7 +299,9 @@ static void addOptimizationPasses(legacy::PassManagerBase &mpm,
+     builder.Inliner = createAlwaysInlinerPass();
+ #endif
+   }
++#if LDC_LLVM_VER < 900
+   builder.DisableUnitAtATime = !unitAtATime;
++#endif
+   builder.DisableUnrollLoops = optLevel == 0;
+ 
+   builder.DisableUnrollLoops = (disableLoopUnrolling.getNumOccurrences() > 0)
+@@ -453,7 +464,9 @@ void outputOptimizationSettings(llvm::raw_ostream &hash_os) {
+   hash_os << disableSimplifyDruntimeCalls;
+   hash_os << disableSimplifyLibCalls;
+   hash_os << disableGCToStack;
++#if LDC_LLVM_VER < 900
+   hash_os << unitAtATime;
++#endif
+   hash_os << stripDebug;
+   hash_os << disableLoopUnrolling;
+   hash_os << disableLoopVectorization;
+diff --git a/gen/passes/GarbageCollect2Stack.cpp b/gen/passes/GarbageCollect2Stack.cpp
+index ff67f14e..d2f69620 100644
+--- a/gen/passes/GarbageCollect2Stack.cpp
++++ b/gen/passes/GarbageCollect2Stack.cpp
+@@ -79,11 +79,10 @@ void EmitMemSet(IRBuilder<> &B, Value *Dst, Value *Val, Value *Len,
+                 const Analysis &A) {
+   Dst = B.CreateBitCast(Dst, PointerType::getUnqual(B.getInt8Ty()));
+ 
+-  CallSite CS =
+-      B.CreateMemSet(Dst, Val, Len, 1 /*Align*/, false /*isVolatile*/);
++  auto CS = B.CreateMemSet(Dst, Val, Len, 1 /*Align*/, false /*isVolatile*/);
+   if (A.CGNode) {
+-    A.CGNode->addCalledFunction(
+-        CS, A.CG->getOrInsertFunction(CS.getCalledFunction()));
++    auto calledFunc = CS->getCalledFunction();
++    A.CGNode->addCalledFunction(CS, A.CG->getOrInsertFunction(calledFunc));
+   }
+ }
+ 
+@@ -452,7 +451,11 @@ static void RemoveCall(CallSite CS, const Analysis &A) {
+ 
+   // Remove the runtime call.
+   if (A.CGNode) {
++#if LDC_LLVM_VER >= 900
++    A.CGNode->removeCallEdgeFor(*cast<CallBase>(CS.getInstruction()));
++#else
+     A.CGNode->removeCallEdgeFor(CS);
++#endif
+   }
+   CS->eraseFromParent();
+ }
+diff --git a/gen/runtime.cpp b/gen/runtime.cpp
+index f323c351..bb695570 100644
+--- a/gen/runtime.cpp
++++ b/gen/runtime.cpp
+@@ -343,7 +343,12 @@ llvm::Function *getRuntimeFunction(const Loc &loc, llvm::Module &target,
+   }
+ 
+   LLFunction *resfn =
+-      llvm::cast<llvm::Function>(target.getOrInsertFunction(name, fnty));
++      llvm::cast<llvm::Function>(target
++                                     .getOrInsertFunction(name, fnty)
++#if LDC_LLVM_VER >= 900
++                                     .getCallee()
++#endif
++      );
+   resfn->setAttributes(fn->getAttributes());
+   resfn->setCallingConv(fn->getCallingConv());
+   return resfn;
+-- 
+2.23.0
+

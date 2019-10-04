@@ -1,2 +1,3 @@
-nogold.patch
-stateless.patch
+0001-Fixups-for-packaging-and-stateless-config.patch
+0002-Don-t-force-the-use-of-gold-linker.patch
+0003-Add-support-for-LLVM-9.0.0.patch

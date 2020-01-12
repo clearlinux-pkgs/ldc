@@ -4,7 +4,7 @@
 #
 Name     : ldc
 Version  : 1.17.0
-Release  : 18
+Release  : 19
 URL      : https://github.com/ldc-developers/ldc/releases/download/v1.17.0/ldc-1.17.0-src.tar.gz
 Source0  : https://github.com/ldc-developers/ldc/releases/download/v1.17.0/ldc-1.17.0-src.tar.gz
 Summary  : No detailed summary available
@@ -69,6 +69,8 @@ Summary: lib components for the ldc package.
 Group: Libraries
 Requires: ldc-data = %{version}-%{release}
 Requires: ldc-license = %{version}-%{release}
+Provides: libdruntime-ldc-shared.so.85()(64bit)
+Provides: libphobos2-ldc-shared.so.85()(64bit)
 
 %description lib
 lib components for the ldc package.

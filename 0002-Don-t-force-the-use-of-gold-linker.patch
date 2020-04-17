@@ -1,4 +1,4 @@
-From 3c666322284a24e5177ff28b1bb3c9de29678c33 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Arjan van de Ven <arjan@linux.intel.com>
 Date: Sun, 24 Mar 2019 20:23:36 +0000
 Subject: [PATCH] Don't force the use of gold linker
@@ -9,10 +9,10 @@ Subject: [PATCH] Don't force the use of gold linker
  2 files changed, 1 insertion(+), 2 deletions(-)
 
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 1e458f0e..37bba88c 100644
+index 1bdc9d4..ed411fb 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -434,7 +434,6 @@ source_group("Source Files" FILES ${DRV_SRC_D})
+@@ -432,7 +432,6 @@ source_group("Source Files" FILES ${DRV_SRC_D})
  #
  # Configure the build system to use LTO and/or PGO while building LDC
  #
@@ -21,10 +21,10 @@ index 1e458f0e..37bba88c 100644
  #
  # Enable Dynamic compilation if supported for this platform and LLVM version.
 diff --git a/driver/linker-gcc.cpp b/driver/linker-gcc.cpp
-index a32267e7..dee401d9 100644
+index c9d67b7..c0256f1 100644
 --- a/driver/linker-gcc.cpp
 +++ b/driver/linker-gcc.cpp
-@@ -579,7 +579,7 @@ void ArgsBuilder::addLinker() {
+@@ -577,7 +577,7 @@ void ArgsBuilder::addLinker() {
      // Default to ld.gold on Linux due to ld.bfd issues with ThinLTO (see #2278)
      // and older bfd versions stripping llvm.used symbols (e.g., ModuleInfo
      // refs) with --gc-sections (see #2870).
@@ -33,6 +33,3 @@ index a32267e7..dee401d9 100644
    }
  }
  
--- 
-2.23.0
-

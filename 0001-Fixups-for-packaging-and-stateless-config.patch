@@ -1,4 +1,4 @@
-From 3e95fa46187e6570b12666afc55ef01c8e34247b Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Patrick McCarty <patrick.mccarty@intel.com>
 Date: Mon, 12 Aug 2019 12:44:27 -0700
 Subject: [PATCH] Fixups for packaging and stateless config
@@ -14,10 +14,10 @@ Signed-off-by: Patrick McCarty <patrick.mccarty@intel.com>
  1 file changed, 4 insertions(+)
 
 diff --git a/driver/configfile.cpp b/driver/configfile.cpp
-index f776ea24..e9d00d0b 100644
+index e2c3f67..6d3b543 100644
 --- a/driver/configfile.cpp
 +++ b/driver/configfile.cpp
-@@ -161,6 +161,10 @@ bool ConfigFile::locate(std::string &pathstr) {
+@@ -157,6 +157,10 @@ bool ConfigFile::locate(std::string &pathstr) {
    // try /etc/ldc (absolute path)
    p = "/etc/ldc";
    APPEND_FILENAME_AND_RETURN_IF_EXISTS
@@ -28,6 +28,3 @@ index f776ea24..e9d00d0b 100644
  #endif
  
  #undef APPEND_FILENAME_AND_RETURN_IF_EXISTS
--- 
-2.23.0
-

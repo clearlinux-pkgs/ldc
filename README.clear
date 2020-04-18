@@ -1,0 +1,2 @@
+Whenever updating to a new version, add a compat-ldc-* package for the previous
+version to enable ldc to rebuild with the new version.

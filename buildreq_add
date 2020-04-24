@@ -4,15 +4,7 @@ llvm-dev
 strace
 #binutils-extras
 llvm-extras
-# FIXME: The build breaks when linking with libLLVMSPIRVLib.a (from
-# llvm-staticdev), which disables ldc's SPIR-V target. Try re-enabling
-# llvm-staticdev after updating to LLVM 10 (which will include the latest
-# SPIRV-LLVM-Translator snapshot). This is the error:
-#
-#   : CommandLine Error: Option 'spirv-mem2reg' registered more than once!
-#   LLVM ERROR: inconsistency in registered CommandLine options
-#
-#llvm-staticdev
+llvm-staticdev
 libffi-dev
 ncurses-dev
 #fake-gold

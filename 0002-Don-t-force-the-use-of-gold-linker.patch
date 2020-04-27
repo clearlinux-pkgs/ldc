@@ -5,14 +5,14 @@ Subject: [PATCH] Don't force the use of gold linker
 
 ---
  CMakeLists.txt        | 1 -
- driver/linker-gcc.cpp | 2 +-
- 2 files changed, 1 insertion(+), 2 deletions(-)
+ driver/linker-gcc.cpp | 4 ++--
+ 2 files changed, 2 insertions(+), 3 deletions(-)
 
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 1bdc9d4..ed411fb 100644
+index 6b88b90..bd88f42 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -432,7 +432,6 @@ source_group("Source Files" FILES ${DRV_SRC_D})
+@@ -445,7 +445,6 @@ source_group("Source Files" FILES ${DRV_SRC_D})
  #
  # Configure the build system to use LTO and/or PGO while building LDC
  #
@@ -21,15 +21,17 @@ index 1bdc9d4..ed411fb 100644
  #
  # Enable Dynamic compilation if supported for this platform and LLVM version.
 diff --git a/driver/linker-gcc.cpp b/driver/linker-gcc.cpp
-index c9d67b7..c0256f1 100644
+index b1e5038..b6ea168 100644
 --- a/driver/linker-gcc.cpp
 +++ b/driver/linker-gcc.cpp
-@@ -577,7 +577,7 @@ void ArgsBuilder::addLinker() {
-     // Default to ld.gold on Linux due to ld.bfd issues with ThinLTO (see #2278)
+@@ -578,8 +578,8 @@ void ArgsBuilder::addLinker() {
      // and older bfd versions stripping llvm.used symbols (e.g., ModuleInfo
      // refs) with --gc-sections (see #2870).
--    args.push_back("-fuse-ld=gold");
-+    // args.push_back("-fuse-ld=gold");
+     // Can be overridden by `-linker=` (explicitly empty).
+-    if (opts::linker.getNumOccurrences() == 0)
+-      args.push_back("-fuse-ld=gold");
++    // if (opts::linker.getNumOccurrences() == 0)
++    //   args.push_back("-fuse-ld=gold");
    }
  }
  

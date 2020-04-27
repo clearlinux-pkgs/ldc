@@ -1,12 +1,9 @@
 # This file contains additional build requirements that did not get
 # picked up automatically. One name per line, no whitespace.
+ldc
+ldc-dev
+libffi-dev
 llvm-dev
-strace
-#binutils-extras
 llvm-extras
 llvm-staticdev
-libffi-dev
 ncurses-dev
-#fake-gold
-ldc-dev
-ldc

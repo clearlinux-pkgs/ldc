@@ -1,37 +1,23 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
-From: Arjan van de Ven <arjan@linux.intel.com>
-Date: Sun, 24 Mar 2019 20:23:36 +0000
+From: Patrick McCarty <patrick.mccarty@intel.com>
+Date: Tue, 17 Nov 2020 16:56:32 +0000
 Subject: [PATCH] Don't force the use of gold linker
 
+Signed-off-by: Patrick McCarty <patrick.mccarty@intel.com>
 ---
- CMakeLists.txt        | 1 -
- driver/linker-gcc.cpp | 4 ++--
- 2 files changed, 2 insertions(+), 3 deletions(-)
+ driver/linker-gcc.cpp | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 6b88b90..bd88f42 100644
---- a/CMakeLists.txt
-+++ b/CMakeLists.txt
-@@ -445,7 +445,6 @@ source_group("Source Files" FILES ${DRV_SRC_D})
- #
- # Configure the build system to use LTO and/or PGO while building LDC
- #
--include(HandleLTOPGOBuildOptions)
- 
- #
- # Enable Dynamic compilation if supported for this platform and LLVM version.
 diff --git a/driver/linker-gcc.cpp b/driver/linker-gcc.cpp
-index b1e5038..b6ea168 100644
+index e2a2523..e6e6f1d 100644
 --- a/driver/linker-gcc.cpp
 +++ b/driver/linker-gcc.cpp
-@@ -578,8 +578,8 @@ void ArgsBuilder::addLinker() {
-     // and older bfd versions stripping llvm.used symbols (e.g., ModuleInfo
-     // refs) with --gc-sections (see #2870).
-     // Can be overridden by `-linker=` (explicitly empty).
--    if (opts::linker.getNumOccurrences() == 0)
--      args.push_back("-fuse-ld=gold");
-+    // if (opts::linker.getNumOccurrences() == 0)
-+    //   args.push_back("-fuse-ld=gold");
+@@ -590,6 +590,8 @@ void ArgsBuilder::addLinker() {
+     }
    }
- }
  
++  linker = "bfd";
++
+   if (!linker.empty())
+     args.push_back(("-fuse-ld=" + linker).str());
+ }

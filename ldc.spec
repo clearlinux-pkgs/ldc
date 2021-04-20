@@ -4,7 +4,7 @@
 #
 Name     : ldc
 Version  : 1.24.0
-Release  : 32
+Release  : 33
 URL      : https://github.com/ldc-developers/ldc/releases/download/v1.24.0/ldc-1.24.0-src.tar.gz
 Source0  : https://github.com/ldc-developers/ldc/releases/download/v1.24.0/ldc-1.24.0-src.tar.gz
 Summary  : No detailed summary available
@@ -103,7 +103,7 @@ export http_proxy=http://127.0.0.1:9/
 export https_proxy=http://127.0.0.1:9/
 export no_proxy=localhost,127.0.0.1,0.0.0.0
 export LANG=C.UTF-8
-export SOURCE_DATE_EPOCH=1605652135
+export SOURCE_DATE_EPOCH=1618879860
 mkdir -p clr-build
 pushd clr-build
 export GCC_IGNORE_WERROR=1
@@ -127,11 +127,11 @@ export CXXFLAGS="$CXXFLAGS -fno-lto "
 -DBUILD_SHARED_LIBS:BOOL=ON \
 -DLDC_DYNAMIC_COMPILE=OFF \
 -DSYSCONF_INSTALL_DIR=/usr/share/defaults/etc
-make  %{?_smp_mflags}
+make  %{?_smp_mflags}  VERBOSE=1
 popd
 
 %install
-export SOURCE_DATE_EPOCH=1605652135
+export SOURCE_DATE_EPOCH=1618879860
 rm -rf %{buildroot}
 mkdir -p %{buildroot}/usr/share/package-licenses/ldc
 cp %{_builddir}/ldc-1.24.0-src/runtime/druntime/LICENSE.txt %{buildroot}/usr/share/package-licenses/ldc/3cba29011be2b9d59f6204d6fa0a386b1b2dbd90

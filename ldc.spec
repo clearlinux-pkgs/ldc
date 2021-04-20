@@ -4,7 +4,7 @@
 #
 Name     : ldc
 Version  : 1.25.1
-Release  : 34
+Release  : 35
 URL      : https://github.com/ldc-developers/ldc/releases/download/v1.25.1/ldc-1.25.1-src.tar.gz
 Source0  : https://github.com/ldc-developers/ldc/releases/download/v1.25.1/ldc-1.25.1-src.tar.gz
 Summary  : No detailed summary available

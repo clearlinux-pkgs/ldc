@@ -1,8 +1,6 @@
 ld-linux-x86-64.so.2
 libLLVM.so.11
 libc.so.6
-libdruntime-ldc-shared.so.95
 libgcc_s.so.1
 libm.so.6
-libphobos2-ldc-shared.so.95
 libstdc++.so.6

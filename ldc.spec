@@ -4,7 +4,7 @@
 #
 Name     : ldc
 Version  : 1.27.0
-Release  : 36
+Release  : 37
 URL      : https://github.com/ldc-developers/ldc/releases/download/v1.27.0/ldc-1.27.0-src.tar.gz
 Source0  : https://github.com/ldc-developers/ldc/releases/download/v1.27.0/ldc-1.27.0-src.tar.gz
 Summary  : No detailed summary available
@@ -103,7 +103,7 @@ export http_proxy=http://127.0.0.1:9/
 export https_proxy=http://127.0.0.1:9/
 export no_proxy=localhost,127.0.0.1,0.0.0.0
 export LANG=C.UTF-8
-export SOURCE_DATE_EPOCH=1628005989
+export SOURCE_DATE_EPOCH=1628452570
 mkdir -p clr-build
 pushd clr-build
 export GCC_IGNORE_WERROR=1
@@ -131,7 +131,7 @@ make  %{?_smp_mflags}
 popd
 
 %install
-export SOURCE_DATE_EPOCH=1628005989
+export SOURCE_DATE_EPOCH=1628452570
 rm -rf %{buildroot}
 mkdir -p %{buildroot}/usr/share/package-licenses/ldc
 cp %{_builddir}/ldc-1.27.0-src/runtime/druntime/LICENSE.txt %{buildroot}/usr/share/package-licenses/ldc/3cba29011be2b9d59f6204d6fa0a386b1b2dbd90
